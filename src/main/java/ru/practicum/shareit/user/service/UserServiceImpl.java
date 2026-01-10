@@ -40,7 +40,7 @@ public class UserServiceImpl implements UserService {
             user.setEmail(userDto.getEmail());
         }
 
-        return UserMapper.toUserDto(user);
+        return UserMapper.toUserDto(userRepository.save(user));
     }
 
     @Override
@@ -57,8 +57,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void delete(Long userId) {
-        getUserOrThrow(userId);
-        userRepository.findAll().removeIf(user -> user.getId().equals(userId));
+        if (!userRepository.existsById(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
+        userRepository.deleteById(userId);
     }
 
     private User getUserOrThrow(Long userId) {
@@ -76,10 +78,7 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("Некорректный email");
         }
 
-        boolean emailExists = userRepository.findAll().stream()
-                .anyMatch(user -> user.getEmail().equals(dto.getEmail()));
-
-        if (emailExists) {
+        if (userRepository.existsByEmail(dto.getEmail())) {
             throw new ConflictException("Email уже используется");
         }
     }

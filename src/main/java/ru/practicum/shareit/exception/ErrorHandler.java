@@ -33,4 +33,11 @@ public class ErrorHandler {
     public Map<String, String> handleConflict(ConflictException e) {
         return Map.of("error", e.getMessage());
     }
+
+    @ExceptionHandler(Throwable.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleOther(Throwable e) {
+        return Map.of("error", e.getMessage());
+    }
+
 }
