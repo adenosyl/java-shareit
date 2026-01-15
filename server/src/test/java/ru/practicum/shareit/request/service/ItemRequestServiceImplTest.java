@@ -9,7 +9,7 @@ import ru.practicum.shareit.request.dto.ItemRequestResponseDto;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.service.UserService;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Transactional
@@ -35,5 +35,35 @@ class ItemRequestServiceImplTest {
 
         assertThat(response.getId()).isNotNull();
         assertThat(response.getDescription()).isEqualTo("Need drill");
+    }
+
+    @Test
+    void getOwnAndOtherRequests_shouldWork() {
+        UserDto requester = userService.create(
+                new UserDto(null, "Requester", "req@mail.com")
+        );
+
+        UserDto other = userService.create(
+                new UserDto(null, "Other", "other@mail.com")
+        );
+
+        ItemRequestDto dto = new ItemRequestDto();
+        dto.setDescription("Need hammer");
+
+        ItemRequestResponseDto created =
+                itemRequestService.create(requester.getId(), dto);
+
+        var ownRequests =
+                itemRequestService.getOwnRequests(requester.getId());
+
+        var otherRequests =
+                itemRequestService.getOtherRequests(other.getId());
+
+        var byId =
+                itemRequestService.getById(requester.getId(), created.getId());
+
+        assertThat(ownRequests).hasSize(1);
+        assertThat(otherRequests).hasSize(1);
+        assertThat(byId.getDescription()).isEqualTo("Need hammer");
     }
 }
