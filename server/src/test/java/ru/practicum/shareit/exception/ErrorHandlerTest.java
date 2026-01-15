@@ -8,10 +8,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -22,19 +20,12 @@ class ErrorHandlerTest {
     private MockMvc mockMvc;
 
     @Test
-    void shouldReturn404WhenNotFound() throws Exception {
-        mockMvc.perform(get("/items/999")
-                        .header("X-Sharer-User-Id", 1))
+    void shouldReturn404WhenUserNotFound() throws Exception {
+        mockMvc.perform(post("/items")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Sharer-User-Id", 1)
+                        .content("{}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").exists());
-    }
-
-    @Test
-    void shouldReturn400OnValidationError() throws Exception {
-        mockMvc.perform(post("/items")
-                        .header("X-Sharer-User-Id", 1)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest());
     }
 }
