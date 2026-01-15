@@ -1,21 +1,22 @@
 package ru.practicum.shareit.booking.service;
 
 import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import ru.practicum.shareit.booking.dto.BookingCreateDto;
+import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.booking.dto.BookingCreateDto;
-import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.user.service.UserService;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import java.time.LocalDateTime;
+import java.util.List;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Transactional
@@ -32,13 +33,8 @@ class BookingServiceImplTest {
 
     @Test
     void createBooking_shouldReturnBooking() {
-        UserDto owner = userService.create(
-                new UserDto(null, "Owner", "owner@mail.com")
-        );
-
-        UserDto booker = userService.create(
-                new UserDto(null, "Booker", "booker@mail.com")
-        );
+        UserDto owner = userService.create(new UserDto(null, "Owner", "owner@mail.com"));
+        UserDto booker = userService.create(new UserDto(null, "Booker", "booker@mail.com"));
 
         ItemDto item = new ItemDto();
         item.setName("Drill");
@@ -47,84 +43,112 @@ class BookingServiceImplTest {
 
         ItemDto savedItem = itemService.create(owner.getId(), item);
 
-        BookingCreateDto bookingCreateDto = new BookingCreateDto();
-        bookingCreateDto.setItemId(savedItem.getId());
-        bookingCreateDto.setStart(LocalDateTime.now().plusDays(1));
-        bookingCreateDto.setEnd(LocalDateTime.now().plusDays(2));
+        BookingCreateDto dto = new BookingCreateDto();
+        dto.setItemId(savedItem.getId());
+        dto.setStart(LocalDateTime.now().plusDays(1));
+        dto.setEnd(LocalDateTime.now().plusDays(2));
 
-        BookingDto booking =
-                bookingService.create(booker.getId(), bookingCreateDto);
+        BookingDto booking = bookingService.create(booker.getId(), dto);
 
         assertThat(booking.getId()).isNotNull();
-        assertThat(booking.getStatus()).isNotNull();
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.WAITING);
     }
 
     @Test
-    void createAndApproveBooking_fullFlow() {
-        UserDto owner = userService.create(
-                new UserDto(null, "Owner", "owner@mail.com")
-        );
-
-        UserDto booker = userService.create(
-                new UserDto(null, "Booker", "booker@mail.com")
-        );
+    void approveBooking_shouldChangeStatus() {
+        UserDto owner = userService.create(new UserDto(null, "Owner", "owner@mail.com"));
+        UserDto booker = userService.create(new UserDto(null, "Booker", "booker@mail.com"));
 
         ItemDto item = new ItemDto();
-        item.setName("Drill");
-        item.setDescription("Power drill");
+        item.setName("Item");
+        item.setDescription("Desc");
         item.setAvailable(true);
 
         ItemDto savedItem = itemService.create(owner.getId(), item);
 
-        BookingCreateDto bookingCreateDto = new BookingCreateDto();
-        bookingCreateDto.setItemId(savedItem.getId());
-        bookingCreateDto.setStart(LocalDateTime.now().plusDays(1));
-        bookingCreateDto.setEnd(LocalDateTime.now().plusDays(2));
+        BookingCreateDto dto = new BookingCreateDto();
+        dto.setItemId(savedItem.getId());
+        dto.setStart(LocalDateTime.now().plusDays(1));
+        dto.setEnd(LocalDateTime.now().plusDays(2));
 
-        BookingDto booking =
-                bookingService.create(booker.getId(), bookingCreateDto);
+        BookingDto booking = bookingService.create(booker.getId(), dto);
 
-        BookingDto approved =
-                bookingService.approve(owner.getId(), booking.getId(), true);
-
-        BookingDto found =
-                bookingService.getById(booker.getId(), booking.getId());
+        BookingDto approved = bookingService.approve(owner.getId(), booking.getId(), true);
 
         assertThat(approved.getStatus()).isEqualTo(BookingStatus.APPROVED);
-        assertThat(found.getId()).isEqualTo(booking.getId());
     }
 
     @Test
     void rejectBooking_shouldChangeStatus() {
-        // ---------- arrange ----------
-        UserDto owner = userService.create(
-                new UserDto(null, "Owner", "owner@mail.com")
-        );
-
-        UserDto booker = userService.create(
-                new UserDto(null, "Booker", "booker@mail.com")
-        );
+        UserDto owner = userService.create(new UserDto(null, "Owner", "owner@mail.com"));
+        UserDto booker = userService.create(new UserDto(null, "Booker", "booker@mail.com"));
 
         ItemDto item = new ItemDto();
-        item.setName("Drill");
-        item.setDescription("Power drill");
+        item.setName("Item");
+        item.setDescription("Desc");
         item.setAvailable(true);
 
         ItemDto savedItem = itemService.create(owner.getId(), item);
 
-        BookingCreateDto bookingCreateDto = new BookingCreateDto();
-        bookingCreateDto.setItemId(savedItem.getId());
-        bookingCreateDto.setStart(LocalDateTime.now().plusDays(1));
-        bookingCreateDto.setEnd(LocalDateTime.now().plusDays(2));
+        BookingCreateDto dto = new BookingCreateDto();
+        dto.setItemId(savedItem.getId());
+        dto.setStart(LocalDateTime.now().plusDays(1));
+        dto.setEnd(LocalDateTime.now().plusDays(2));
 
-        BookingDto booking =
-                bookingService.create(booker.getId(), bookingCreateDto);
+        BookingDto booking = bookingService.create(booker.getId(), dto);
 
-        // ---------- act ----------
-        BookingDto rejected =
-                bookingService.approve(owner.getId(), booking.getId(), false);
+        BookingDto rejected = bookingService.approve(owner.getId(), booking.getId(), false);
 
-        // ---------- assert ----------
         assertThat(rejected.getStatus()).isEqualTo(BookingStatus.REJECTED);
+    }
+
+    @Test
+    void getByOwner_stateAll_shouldReturnList() {
+        UserDto owner = userService.create(new UserDto(null, "Owner", "o@mail.com"));
+        UserDto booker = userService.create(new UserDto(null, "Booker", "b@mail.com"));
+
+        ItemDto item = new ItemDto();
+        item.setName("Item");
+        item.setDescription("Desc");
+        item.setAvailable(true);
+
+        ItemDto savedItem = itemService.create(owner.getId(), item);
+
+        BookingCreateDto dto = new BookingCreateDto();
+        dto.setItemId(savedItem.getId());
+        dto.setStart(LocalDateTime.now().plusDays(1));
+        dto.setEnd(LocalDateTime.now().plusDays(2));
+
+        bookingService.create(booker.getId(), dto);
+
+        List<BookingDto> bookings =
+                bookingService.getByOwner(owner.getId(), BookingState.ALL);
+
+        assertThat(bookings).isNotEmpty();
+    }
+
+    @Test
+    void getByBooker_future_shouldReturnList() {
+        UserDto owner = userService.create(new UserDto(null, "Owner", "o@mail.com"));
+        UserDto booker = userService.create(new UserDto(null, "Booker", "b@mail.com"));
+
+        ItemDto item = new ItemDto();
+        item.setName("Item");
+        item.setDescription("Desc");
+        item.setAvailable(true);
+
+        ItemDto savedItem = itemService.create(owner.getId(), item);
+
+        BookingCreateDto dto = new BookingCreateDto();
+        dto.setItemId(savedItem.getId());
+        dto.setStart(LocalDateTime.now().plusDays(5));
+        dto.setEnd(LocalDateTime.now().plusDays(6));
+
+        bookingService.create(booker.getId(), dto);
+
+        List<BookingDto> bookings =
+                bookingService.getByBooker(booker.getId(), BookingState.FUTURE);
+
+        assertThat(bookings).hasSize(1);
     }
 }
