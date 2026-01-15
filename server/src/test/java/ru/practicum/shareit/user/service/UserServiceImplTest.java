@@ -24,4 +24,19 @@ class UserServiceImplTest {
         assertThat(user.getId()).isNotNull();
         assertThat(user.getEmail()).isEqualTo("ivan@mail.com");
     }
+
+    @Test
+    void updateUserWithPartialData() {
+        UserDto user = userService.create(
+                new UserDto(null, "Ivan", "ivan@mail.com")
+        );
+
+        UserDto update = new UserDto();
+        update.setName("NewName");
+
+        UserDto result = userService.update(user.getId(), update);
+
+        assertThat(result.getName()).isEqualTo("NewName");
+        assertThat(result.getEmail()).isEqualTo("ivan@mail.com");
+    }
 }

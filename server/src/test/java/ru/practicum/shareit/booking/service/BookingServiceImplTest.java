@@ -93,4 +93,38 @@ class BookingServiceImplTest {
         assertThat(approved.getStatus()).isEqualTo(BookingStatus.APPROVED);
         assertThat(found.getId()).isEqualTo(booking.getId());
     }
+
+    @Test
+    void rejectBooking_shouldChangeStatus() {
+        // ---------- arrange ----------
+        UserDto owner = userService.create(
+                new UserDto(null, "Owner", "owner@mail.com")
+        );
+
+        UserDto booker = userService.create(
+                new UserDto(null, "Booker", "booker@mail.com")
+        );
+
+        ItemDto item = new ItemDto();
+        item.setName("Drill");
+        item.setDescription("Power drill");
+        item.setAvailable(true);
+
+        ItemDto savedItem = itemService.create(owner.getId(), item);
+
+        BookingCreateDto bookingCreateDto = new BookingCreateDto();
+        bookingCreateDto.setItemId(savedItem.getId());
+        bookingCreateDto.setStart(LocalDateTime.now().plusDays(1));
+        bookingCreateDto.setEnd(LocalDateTime.now().plusDays(2));
+
+        BookingDto booking =
+                bookingService.create(booker.getId(), bookingCreateDto);
+
+        // ---------- act ----------
+        BookingDto rejected =
+                bookingService.approve(owner.getId(), booking.getId(), false);
+
+        // ---------- assert ----------
+        assertThat(rejected.getStatus()).isEqualTo(BookingStatus.REJECTED);
+    }
 }
