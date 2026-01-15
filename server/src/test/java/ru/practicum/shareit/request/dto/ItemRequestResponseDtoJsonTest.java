@@ -40,8 +40,7 @@ class ItemRequestResponseDtoJsonTest {
     @Test
     void deserialize_shouldCorrectlyReadJson() throws Exception {
         String jsonContent = """
-                {
-                  "id": 1,
+                {"id": 1,
                   "description": "Нужна дрель",
                   "created": "2026-01-14T12:00:00",
                   "items": []
