@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
@@ -228,5 +229,30 @@ class BookingServiceImplTest {
                 bookingService.getByBooker(booker.getId(), BookingState.PAST);
 
         assertThat(bookings).hasSize(1);
+    }
+
+    @Test
+    void approveByNotOwner_shouldFail() {
+        UserDto owner = userService.create(new UserDto(null, "Owner", "o@mail.com"));
+        UserDto booker = userService.create(new UserDto(null, "Booker", "b@mail.com"));
+        UserDto other = userService.create(new UserDto(null, "Other", "x@mail.com"));
+
+        ItemDto item = new ItemDto();
+        item.setName("Item");
+        item.setDescription("Desc");
+        item.setAvailable(true);
+
+        ItemDto savedItem = itemService.create(owner.getId(), item);
+
+        BookingCreateDto dto = new BookingCreateDto();
+        dto.setItemId(savedItem.getId());
+        dto.setStart(LocalDateTime.now().plusDays(1));
+        dto.setEnd(LocalDateTime.now().plusDays(2));
+
+        BookingDto booking = bookingService.create(booker.getId(), dto);
+
+        assertThatThrownBy(() ->
+                bookingService.approve(other.getId(), booking.getId(), true)
+        ).isInstanceOf(RuntimeException.class);
     }
 }

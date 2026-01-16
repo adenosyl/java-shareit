@@ -37,4 +37,13 @@ class ErrorHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").exists());
     }
+
+    @Test
+    void badRequest_shouldReturn400() throws Exception {
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").exists());
+    }
 }
