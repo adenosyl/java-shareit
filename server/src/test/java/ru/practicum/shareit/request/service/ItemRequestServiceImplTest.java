@@ -66,4 +66,28 @@ class ItemRequestServiceImplTest {
         assertThat(otherRequests).hasSize(1);
         assertThat(byId.getDescription()).isEqualTo("Need hammer");
     }
+
+    @Test
+    void createRequest_userNotFound_shouldThrowException() {
+        ItemRequestDto dto = new ItemRequestDto();
+        dto.setDescription("Need something");
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> itemRequestService.create(999L, dto)
+        );
+    }
+
+    @Test
+    void getById_requestNotFound_shouldThrowException() {
+        UserDto user = userService.create(
+                new UserDto(null, "User", "u@mail.com")
+        );
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> itemRequestService.getById(user.getId(), 999L)
+        );
+    }
+
 }

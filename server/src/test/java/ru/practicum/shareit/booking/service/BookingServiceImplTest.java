@@ -151,4 +151,82 @@ class BookingServiceImplTest {
 
         assertThat(bookings).hasSize(1);
     }
+
+    @Test
+    void approveBooking_twice_shouldThrowException() {
+        UserDto owner = userService.create(new UserDto(null, "Owner", "o@mail.com"));
+        UserDto booker = userService.create(new UserDto(null, "Booker", "b@mail.com"));
+
+        ItemDto item = new ItemDto();
+        item.setName("Item");
+        item.setDescription("Desc");
+        item.setAvailable(true);
+
+        ItemDto savedItem = itemService.create(owner.getId(), item);
+
+        BookingCreateDto dto = new BookingCreateDto();
+        dto.setItemId(savedItem.getId());
+        dto.setStart(LocalDateTime.now().plusDays(1));
+        dto.setEnd(LocalDateTime.now().plusDays(2));
+
+        BookingDto booking = bookingService.create(booker.getId(), dto);
+
+        bookingService.approve(owner.getId(), booking.getId(), true);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> bookingService.approve(owner.getId(), booking.getId(), true)
+        );
+    }
+
+    @Test
+    void approveBooking_notOwner_shouldThrowException() {
+        UserDto owner = userService.create(new UserDto(null, "Owner", "o@mail.com"));
+        UserDto stranger = userService.create(new UserDto(null, "Stranger", "s@mail.com"));
+        UserDto booker = userService.create(new UserDto(null, "Booker", "b@mail.com"));
+
+        ItemDto item = new ItemDto();
+        item.setName("Item");
+        item.setDescription("Desc");
+        item.setAvailable(true);
+
+        ItemDto savedItem = itemService.create(owner.getId(), item);
+
+        BookingCreateDto dto = new BookingCreateDto();
+        dto.setItemId(savedItem.getId());
+        dto.setStart(LocalDateTime.now().plusDays(1));
+        dto.setEnd(LocalDateTime.now().plusDays(2));
+
+        BookingDto booking = bookingService.create(booker.getId(), dto);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> bookingService.approve(stranger.getId(), booking.getId(), true)
+        );
+    }
+
+    @Test
+    void getByBooker_past_shouldReturnList() {
+        UserDto owner = userService.create(new UserDto(null, "Owner", "o@mail.com"));
+        UserDto booker = userService.create(new UserDto(null, "Booker", "b@mail.com"));
+
+        ItemDto item = new ItemDto();
+        item.setName("Item");
+        item.setDescription("Desc");
+        item.setAvailable(true);
+
+        ItemDto savedItem = itemService.create(owner.getId(), item);
+
+        BookingCreateDto dto = new BookingCreateDto();
+        dto.setItemId(savedItem.getId());
+        dto.setStart(LocalDateTime.now().minusDays(3));
+        dto.setEnd(LocalDateTime.now().minusDays(1));
+
+        bookingService.create(booker.getId(), dto);
+
+        List<BookingDto> bookings =
+                bookingService.getByBooker(booker.getId(), BookingState.PAST);
+
+        assertThat(bookings).hasSize(1);
+    }
 }

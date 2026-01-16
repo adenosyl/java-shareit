@@ -49,4 +49,67 @@ class ItemServiceImplTest {
         assertThat(item.getAvailable()).isTrue();
         assertThat(item.getComments()).isEmpty();
     }
+
+    @Test
+    void createItem_userNotFound_shouldThrowException() {
+        ItemDto itemDto = new ItemDto();
+        itemDto.setName("Item");
+        itemDto.setDescription("Desc");
+        itemDto.setAvailable(true);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> itemService.create(999L, itemDto)
+        );
+    }
+
+    @Test
+    void updateItem_notOwner_shouldThrowException() {
+        UserDto owner = userService.create(new UserDto(null, "Owner", "o@mail.com"));
+        UserDto stranger = userService.create(new UserDto(null, "Stranger", "s@mail.com"));
+
+        ItemDto itemDto = new ItemDto();
+        itemDto.setName("Item");
+        itemDto.setDescription("Desc");
+        itemDto.setAvailable(true);
+
+        ItemDto saved = itemService.create(owner.getId(), itemDto);
+
+        ItemDto update = new ItemDto();
+        update.setName("Updated");
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> itemService.update(stranger.getId(), saved.getId(), update)
+        );
+    }
+
+    @Test
+    void updateItem_owner_shouldUpdateFields() {
+        UserDto owner = userService.create(new UserDto(null, "Owner", "o@mail.com"));
+
+        ItemDto itemDto = new ItemDto();
+        itemDto.setName("Item");
+        itemDto.setDescription("Desc");
+        itemDto.setAvailable(true);
+
+        ItemDto saved = itemService.create(owner.getId(), itemDto);
+
+        ItemDto update = new ItemDto();
+        update.setName("Updated");
+        update.setDescription("Updated desc");
+
+        ItemDto updated = itemService.update(owner.getId(), saved.getId(), update);
+
+        assertThat(updated.getName()).isEqualTo("Updated");
+        assertThat(updated.getDescription()).isEqualTo("Updated desc");
+    }
+
+    @Test
+    void getById_userNotFound_shouldThrowException() {
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> itemService.getById(999L, 1L)
+        );
+    }
 }
